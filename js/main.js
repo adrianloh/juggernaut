@@ -64,7 +64,7 @@ Ranger.directive('dropzone', function($location) {
 			});
 
 			dropzone.on("addedfile", function(file) {
-				file.uploadPath = $location.path() + "/" + file.name;
+				file.uploadPath = scope.realLocation().path + "/" + file.name;
 				uploadZoneEl.removeClass("dropActive");
 			});
 
@@ -157,10 +157,19 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 		reverse: false
 	};
 
+	$scope.realLocation = function() {
+		var m = $location.path().split("__seq"),
+			seq = m.length>1 ? m[1] : null;
+		return {
+			path: m[0],
+			sequence: seq
+		}
+	};
+
 	$scope.filterFileItem = function(file) {
 		// Return true to show, false to hide
-		if (isViewingSequence()) {
-			var seq = $location.path().split("/__seq/")[1];
+		var seq = $scope.realLocation().sequence;
+		if (seq!==null) {
 			if (file.hasOwnProperty('isPartOfSequence') &&
 				file.isPartOfSequence===seq) {
 				return true;
@@ -177,7 +186,7 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 
 	$scope.goUpOneLevelOnClick = function() {
 		var p = $location.path(),
-			n = isViewingSequence() ? -2 : -1;
+			n = $scope.realLocation().sequence!==null ? -2 : -1;
 		openFolder(p.split("/").slice(0,n).join("/"));
 	};
 
@@ -186,7 +195,7 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 	};
 
 	$scope.inspectFile = function(file) {
-		var url = isViewingSequence() ? $location.path().split("/__seq/")[0] : $location.path(),
+		var url = $scope.realLocation().path,
 			filepath = url + "/" + file.name;
 		$scope.previewThumb = "/@ffmpeg" + filepath;
 		$scope.showInfo();
@@ -201,10 +210,6 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 			}
 		});
 	};
-
-	function isViewingSequence() {
-		return $location.path().match(/__seq/)!==null;
-	}
 
 	function filesize(size) {
 		var string;
