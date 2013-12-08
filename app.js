@@ -287,20 +287,19 @@ app.get(/@ffmpeg\/(.+)/, function(req, res) {
 
 	if (fs.existsSync(fsPath)) {
 		if (exiv2.hasOwnProperty(extension)) {
-			var basename = path.basename(fsPath),
-				_basename = basename.replace(/\....$/,""),
-				tmpFile = '/tmp/#FILE'.replace(/#FILE/,basename),
+			var _basename = uuid.v4().replace(/-/g,""),
+				tmpFile = '/tmp/' + _basename + extension,
 				previewPathToExpect = "/tmp/" + _basename + "-preview2.jpg";
-			cmd = 'cp "#FILE" "#TMP"; exiv2 -ep2 "#TMP"'.replace(/#FILE/, fsPath).replace(/#TMP/g, tmpFile);
+			cmd = 'cp "#FILE" "#TMP" && exiv2 -ep2 "#TMP"'.replace(/#FILE/, fsPath).replace(/#TMP/g, tmpFile);
 			child_process.exec(cmd, function(err, stdout, stderr) {
 				if (!err && fs.existsSync(previewPathToExpect)) {
 					fs.unlink(tmpFile);
 					setTimeout(function() {
-						fs.unlink(previewPathToExpect, function(err) {});
-					}, 30000);
+						fs.unlink(previewPathToExpect, function(err) {
+							if (err) { console.log(err); }
+						});
+					}, 10000);
 					res.sendfile(previewPathToExpect);
-					// magicksend(previewPathToExpect, false, "-sample");
-					//ffmpegMakeThumbnailFromImage(previewPathToExpect);
 				} else {
 					sendNoContent();
 				}
