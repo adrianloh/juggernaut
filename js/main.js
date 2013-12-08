@@ -146,6 +146,8 @@ var yowza;
 
 Ranger.controller("FilelistController", function($window, $rootScope, $scope, $timeout, $location, $http) {
 
+	yowza = $scope;
+
 	$scope.filelist = {};
 	$scope.origin = window.location.origin;
 
@@ -158,11 +160,10 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 	};
 
 	$scope.realLocation = function() {
-		var m = $location.path().split("__seq"),
-			seq = m.length>1 ? m[1] : null;
+		var m = $location.path().split("/__seq/");
 		return {
 			path: m[0],
-			sequence: seq
+			sequence: m.length>1 ? m[1] : null
 		}
 	};
 
