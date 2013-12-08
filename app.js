@@ -448,30 +448,48 @@ var util = require('util');
 app.post('/@dropitlikeitshot', function (req, res) {
 	var savePath = req.headers.key,
 		form = new formidable.IncomingForm(),
-		out = fs.createWriteStream(savePath);
-	out.on('error', function() {
-		res.status(403);
-		res.end();
-	});
-	out.on('open', function() {
-		form.onPart = function(part) {
-			if (!part.filename) {
-				// let formidable handle all non-file parts
-				form.handlePart(part);
-			}
-			part.on("data", function(chunk) {
-				out.write(chunk);
-			});
-		};
-		form.parse(req, function(err, fields, files) {
-			if (!err) {
-				res.status(200);
+		okToGo = Q.defer();
+
+	if (fs.existsSync(savePath)) {
+		fs.unlink(savePath, function(err) {
+			if (err) {
+				res.status(403);
+				res.end();
 			} else {
-				res.status(500);
+				receiveUpload();
 			}
+		});
+	} else {
+		receiveUpload();
+	}
+
+	function receiveUpload() {
+		var out = fs.createWriteStream(savePath);
+		out.on('error', function() {
+			res.status(403);
 			res.end();
 		});
-	});
+		out.on('open', function() {
+			form.onPart = function(part) {
+				if (!part.filename) {
+					// let formidable handle all non-file parts
+					form.handlePart(part);
+				}
+				part.on("data", function(chunk) {
+					out.write(chunk);
+				});
+			};
+			form.parse(req, function(err, fields, files) {
+				if (!err) {
+					res.status(200);
+				} else {
+					res.status(500);
+				}
+				res.end();
+			});
+		});
+	}
+
 });
 
 app.all("*", function(req, res) {

@@ -79,6 +79,7 @@ Ranger.directive('dropzone', function($location) {
 			});
 
 			dropzone.on("sending", function(file, xhr, formData) {
+				console.log(file);
 				xhr.setRequestHeader('key', file.uploadPath);
 			});
 
