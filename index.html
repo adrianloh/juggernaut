@@ -1,0 +1,59 @@
+<html ng-app="Ranger">
+<head>
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="/css/index.css">
+	<link rel="stylesheet" type="text/css" href="/js/dropzone/basic.css" />
+	<link rel="stylesheet" type="text/css" href="/js/dropzone/dropzone.css" />
+	<link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+	<link href='http://fonts.googleapis.com/css?family=Roboto+Condensed:400,300,700' rel='stylesheet' type='text/css'>
+	<script>
+		function ImgError(source) {
+			source.src = "/images/no-preview.jpg";
+			source.onerror = "";
+			return true;
+		}
+	</script>
+</head>
+<body>
+<div id="filelist" ng-controller="FilelistController" bindonce>
+	<div id="blocker"></div>
+	<div ng-show="sort.showDropzone" class="dropzoneContainer">
+		<form id="my-awesome-dropzone" action="uploadServer" class="dropzone" dropzone></form>
+	</div>
+	<div id="toolbar">
+		<div id="goLeftButton" ng-click="goBackOnClick()"><i class="icon-caret-left goLeftIcon"></i></div>
+		<div id="goUpButton" ng-click="goUpOneLevelOnClick()"><i class="icon-level-up goUpIcon"></i></div>
+		<div id="inboxButton" ng-click="sort.showDropzone=!sort.showDropzone"><i class="icon-inbox inboxIcon"></i></div>
+	</div>
+	<div id="previewBox" previewbox>
+		<img class="previewThumb" ng-src="{{previewThumb}}" onerror="ImgError(this)"/>
+		<pre class="fileinfo" ng-bind="fileinfo"></pre>
+	</div>
+	<ul id="filelistContainer">
+		<li ng-class="{'filelistItem': true, 'odd': $index%2===0}" ng-repeat="(filename, file) in filelist | toArray | filter: filterFileItem | orderBy: sort.predicate:sort.reverse">
+			<div ng-class="{'littleSadSquare': true, 'odd': $index%2===0}" ng-click="sort.predicate='name'; sort.reverse=!sort.reverse"></div>
+			<div ng-if="file.type==='d'" class="filename">
+				<a class="isDir" bo-href="origin + file.href" ng-click="$event.button===0 ? openFolder(file.href) : null" bo-text="file.name"></a>
+			</div>
+			<div ng-if="file.type==='f'" class="filename" ng-click="inspectFile(file)">
+				<a bo-href="origin + file.href" target="_blank" bo-text="file.name"></a>
+			</div>
+			<div ng-if="file.type==='s'" class="filename">
+				<a class="isSeq" bo-href="file.href" bo-text="file.name"></a>
+			</div>
+			<div class="filetype" bo-text="file._ext" ng-click="sort.predicate='_ext'; sort.reverse=!sort.reverse"></div>
+			<div class="filesize" bo-text="file._size" ng-click="sort.predicate='size'; sort.reverse=!sort.reverse"></div>
+			<div class="filemtime" bo-text="file._mtime" ng-click="sort.predicate='_xtime'; sort.reverse=!sort.reverse"></div>
+		</li>
+	</ul>
+</div>
+	<script src="/js/jquery-2.0.3.min.js"></script>
+	<script src="/js/jquery-ui-1.10.3.custom.min.js"></script>
+	<script src="/js/angular-1.2.2.js"></script>
+	<script src="/js/bindonce.js"></script>
+	<script src="/js/moment.min.js"></script>
+	<script src="/js/faye-browser.js"></script>
+	<script src="/js/dropzone/dropzone.js"></script>
+	<script src="/js/main.js"></script>
+</body>
+</html>
