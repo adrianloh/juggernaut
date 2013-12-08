@@ -224,6 +224,8 @@ a.isSeq:hover {
 	background-color: rgba(81, 101, 138, 0.76);
 	width: 765px;
 	left: 48px;
+	overflow: auto;
+	height: 600px
 }
 
 .dropActive {

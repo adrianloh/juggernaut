@@ -63,6 +63,11 @@ Ranger.directive('dropzone', function($location) {
 				uploadZoneEl.removeClass("dropActive");
 			});
 
+			dropzone.on("addedfile", function(file) {
+				file.uploadPath = $location.path() + "/" + file.name;
+				uploadZoneEl.removeClass("dropActive");
+			});
+
 			dropzone.on("processing", function(file) {
 				var filetypes = ['zip','mkv','rar', 'pdf', 'mov', 'mp4', 'flv'],
 					el = $(file.previewElement),
@@ -74,7 +79,7 @@ Ranger.directive('dropzone', function($location) {
 			});
 
 			dropzone.on("sending", function(file, xhr, formData) {
-				xhr.setRequestHeader('key', $location.path() + "/" + file.name);
+				xhr.setRequestHeader('key', file.uploadPath);
 			});
 
 			dropzone.on("uploadprogress", function(file, percentDone, bytesSent) {
