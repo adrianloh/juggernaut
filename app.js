@@ -81,11 +81,12 @@ var mime = (function() {
 		'.pic': 'image/x-pic',
 		'.m2ts': 'video/mpeg',
 		'.mts': 'video/mpeg',
-		'.k25': 'image/k25',
-		'.sgi': 'image/sgi',
-		'.jpx': 'image/jpx',
-		'.dng': 'image/dng',
-		'.3fr': 'image/3fr',
+		'.k25': 'image/x-k25',
+		'.sgi': 'image/x-sgi',
+		'.iff': 'image/x-iff',
+		'.jpx': 'image/x-jpx',
+		'.dng': 'image/x-dng',
+		'.3fr': 'image/x-3fr',
 		'.jpg': 'image/jpeg',
 		'.jpeg': 'image/jpeg',
 		'.tif': 'image/tiff',
@@ -170,10 +171,10 @@ app.get(/@inspectbitch\/(.+)/, function(req, res) {
 			var output = stdout.split("\n").filter(function(line) {
 				return line.match(/(stream #|duration)/i);
 			});
-			if (output.length>0) {
+			if (output.length>0 && !output.match(/probesize/)) {
 				res.send(output.join("\n"));
 			} else {
-				res.status(500);
+				res.write("NO INFO: " + fsPath);
 				res.end();
 			}
 		});
@@ -213,25 +214,23 @@ app.get(/@inspectbitch\/(.+)/, function(req, res) {
 		} else if (mimetype.match(/video/)) {
 			useffmpeg();
 		} else {
-			res.status(204); // No content
+			res.write("NO INFO: " + fsPath);
 			res.end();
 		}
 	} else {
 		res.status(404);
+		res.write("File does not exists: " + fsPath);
 		res.end();
 	}
 
 });
 
-app.get(/@ffmpeg\/(.+)/, function(req, res) {
+app.get(/@preview\/(.+)/, function(req, res) {
+	res.set('Content-Type', 'image/jpeg');
 	var fsPath = "/" + req.params[0],
 		mimetype = mime.lookup(fsPath),
 		extension = path.extname(fsPath).toLowerCase(),
 		args, cmd,
-		magick = {
-			'.psd': true,
-			'.dng': true
-		},
 		exiv2 = {
 			'.raf': true,
 			'.crw': true,
@@ -248,15 +247,10 @@ app.get(/@ffmpeg\/(.+)/, function(req, res) {
 
 	function sendImage(bin, args) {
 		var ffmpegStream = child_process.spawn(bin, args);
-		res.set('Content-Type', 'image/jpeg');
 		ffmpegStream.stdout.pipe(res);
 		ffmpegStream.on("close", function() {
 			res.end();
 		});
-	}
-
-	function sendNoContent() {
-		res.sendfile(__dirname + "/images/no-preview.jpg");
 	}
 
 	function magicksend(path, useZero, options) {
@@ -280,42 +274,53 @@ app.get(/@ffmpeg\/(.+)/, function(req, res) {
 		});
 	}
 
-	function ffmpegMakeThumbnailFromImage(path) {
-		args = ['-i', fsPath, '-f', 'mjpeg', '-vf', "scale=640:-1", "-"];
-		sendImage(ffmpegBin, args);
+	function convertAndSend(cmd, outputPath, afterConverCallback) {
+		child_process.exec(cmd, function(err, stdout, stderr) {
+			if (!err && fs.existsSync(outputPath)) {
+				if (afterConverCallback) { afterConverCallback(); }
+				setTimeout(function() {
+					fs.unlink(outputPath, function(err) {
+						if (err) { console.log(err); }
+					});
+				}, 10000);
+				res.sendfile(outputPath);
+			} else {
+				sendNoContent();
+			}
+		});
 	}
 
+	function sendNoContent() {
+		res.set('Content-Type', 'image/jpeg');
+		res.sendfile(__dirname + "/images/no-preview.jpg");
+	}
+
+	var _basename;
 	if (fs.existsSync(fsPath)) {
 		if (exiv2.hasOwnProperty(extension)) {
-			var _basename = uuid.v4().replace(/-/g,""),
-				tmpFile = '/tmp/' + _basename + extension,
+			// Extract previews from RAW formats and send
+			_basename = uuid.v4().replace(/-/g,"");
+			var tmpFile = '/tmp/' + _basename + extension,
 				previewPathToExpect = "/tmp/" + _basename + "-preview2.jpg";
 			cmd = 'cp "#FILE" "#TMP" && exiv2 -ep2 "#TMP"'.replace(/#FILE/, fsPath).replace(/#TMP/g, tmpFile);
-			child_process.exec(cmd, function(err, stdout, stderr) {
-				if (!err && fs.existsSync(previewPathToExpect)) {
-					fs.unlink(tmpFile);
-					setTimeout(function() {
-						fs.unlink(previewPathToExpect, function(err) {
-							if (err) { console.log(err); }
-						});
-					}, 10000);
-					res.sendfile(previewPathToExpect);
-				} else {
-					sendNoContent();
-				}
+			console.log(cmd);
+			convertAndSend(cmd, previewPathToExpect, function() {
+				fs.unlink(tmpFile);
 			});
 		} else if (mimetype.match(/image/)) {
-			if (magick.hasOwnProperty(extension)) {
-				if (extension==='.psd') {
-					magicksend(fsPath, true, "-flatten")
-				} else {
-					magicksend(fsPath, false);
-				}
-			} else {
-				ffmpegMakeThumbnailFromImage(fsPath);
+			// Use RV to convert all images
+			_basename = "/tmp/" + uuid.v4().replace(/-/g,"") + ".jpg";
+			cmd = 'rvio "#PATH" -outres 640 400 '.replace(/#PATH/, fsPath)
+			if (extension.match(/exr/)) {
+				cmd+= "-outsrgb "
 			}
+			cmd+= " -o " + _basename;
+			console.log(cmd);
+			convertAndSend(cmd, _basename);
 		} else if (mimetype.match(/video/)) {
+			// Use ffmpeg to convert all videos
 			cmd = ffmpegBin + ' -i "BOO" 2>&1 | grep Duration'.replace(/BOO/, fsPath);
+			console.log(cmd);
 			child_process.exec(cmd, function(err, stdout, stder) {
 				var m = stdout.match(/\d\d:\d\d:\d\d/);
 				if (m) {

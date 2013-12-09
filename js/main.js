@@ -275,17 +275,14 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 	$scope.inspectFile = function(file) {
 		var url = $scope.realLocation().path,
 			filepath = url + "/" + file.name;
-		$scope.previewThumb = "/@ffmpeg" + filepath;
+		$scope.previewThumb = "/@preview" + filepath;
+		$scope.fileinfo = filepath;
 		$scope.showInfo();
 		$http({
 			method: "GET",
 			url: "/@inspectbitch" + filepath
 		}).then(function(resObj) {
-			if (resObj.status===200) {
-				$scope.fileinfo = resObj.data;
-			} else {
-				$scope.fileinfo = filepath;
-			}
+			$scope.fileinfo = resObj.data;
 		});
 	};
 
