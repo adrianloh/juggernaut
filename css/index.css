@@ -214,9 +214,33 @@ a.isSeq:hover {
 	max-height: 400px;
 }
 
+#statusBar {
+	position: fixed;
+	bottom: 0;
+	font-family: 'Roboto Condensed', sans-serif;
+	left: 0;
+	padding-left: 45px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	width: 100%;
+	font-size: 13px;
+	color: rgb(24, 24, 24);
+	display: none;
+}
 
+#statusBar.info {
+	background: rgb(111, 129, 153);
+}
 
+#statusBar.error {
+	background: rgb(153, 74, 94);
+}
 
+#statusBar.ok {
+	background: rgb(74, 153, 104);
+}
+
+/* Dropzone */
 
 .dropzoneContainer {
 	position: fixed;

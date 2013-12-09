@@ -46,7 +46,9 @@
 			<div class="filemtime" bo-text="file._mtime" ng-click="sort.predicate='_xtime'; sort.reverse=!sort.reverse"></div>
 		</li>
 	</ul>
+	<div id="statusBar" ng-class="statusType" ng-bind="statusMessage" statusbar></div>
 </div>
+
 	<script src="/js/jquery-2.0.3.min.js"></script>
 	<script src="/js/jquery-ui-1.10.3.custom.min.js"></script>
 	<script src="/js/angular-1.2.2.js"></script>
@@ -55,5 +57,6 @@
 	<script src="/js/faye-browser.js"></script>
 	<script src="/js/dropzone/dropzone.js"></script>
 	<script src="/js/main.js"></script>
+
 </body>
 </html>

@@ -368,7 +368,7 @@ app.get(/@spreadbitch\/?(.*)/, function(req, res) {
 			});
 		} else {
 			res.send({
-				total: 0,
+				total: err ? -1 : 0,
 				listing: []
 			});
 		}

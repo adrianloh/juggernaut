@@ -14,6 +14,27 @@ var excludeFiles = {
 	'Thumbs.db': null
 };
 
+function filesize(size) {
+	var string;
+	if (size >= 100000000000) {
+		size = size / 100000000000;
+		string = "TB";
+	} else if (size >= 100000000) {
+		size = size / 100000000;
+		string = "GB";
+	} else if (size >= 100000) {
+		size = size / 100000;
+		string = "MB";
+	} else if (size >= 100) {
+		size = size / 100;
+		string = "KB";
+	} else {
+		size = size * 10;
+		string = "b";
+	}
+	return (Math.round(size) / 10).toString() + string;
+}
+
 var Ranger = angular.module('Ranger', ['pasvaz.bindonce']);
 
 Ranger.config(function ($anchorScrollProvider, $locationProvider) {
@@ -142,6 +163,62 @@ Ranger.directive('previewbox', function () {
 	};
 });
 
+
+Ranger.directive('statusbar', function ($timeout, $location) {
+	return {
+		restrict: 'A',
+		link: function(scope, element, attrs) {
+			var el = $(element);
+			scope.statusMessage = "Don't forget kids, even Charlize Theron sucks cock!";
+			scope.statusType = "info";
+			scope.statusOverride = null;
+			scope.showStatus = function(type, message) {
+				if (scope.statusOverride!==null) {
+					type = scope.statusOverride.type;
+					message = scope.statusOverride.message;
+					scope.statusOverride = null;
+				}
+				$timeout(function() {
+					scope.statusType = type;
+					scope.statusMessage = message;
+				});
+				el.show();
+			};
+
+			function refreshTotals() {
+				var fl = scope.filelist,
+					stats = Object.keys(fl).reduce(function(H, fn) {
+						var file = fl[fn],
+							seq = scope.realLocation().sequence;
+						if (seq===null ||
+							(seq!==null && file.hasOwnProperty('isPartOfSequence') && file.isPartOfSequence===seq)) {
+							H[file.type]+=1;
+							H.size+= (file.hasOwnProperty('size') ? file.size : 0);
+							H.totalInView+=1;
+						}
+						return H;
+					}, {d:0, f:0, size:0, totalInView:0}),
+					message = stats.totalInView + " items, " + filesize(stats.size) + " used. " + stats.f + " files, " + stats.d + " directories.";
+				scope.showStatus("info", message);
+			}
+
+			scope.$watch(function() {
+				// We're clobbering these together to "trick" angular into refreshing the view
+				// when either one of these changes and we only trigger the callback once
+				return Object.keys(scope.filelist).length.toString()+$location.path();
+			}, function(total, prev) {
+				if (Object.keys(scope.filelist).length>0) {
+					refreshTotals();
+				} else {
+					scope.showStatus("error", "Directory is empty");
+				}
+			});
+
+		}
+	};
+});
+
+
 var yowza;
 
 Ranger.controller("FilelistController", function($window, $rootScope, $scope, $timeout, $location, $http) {
@@ -211,27 +288,6 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 			}
 		});
 	};
-
-	function filesize(size) {
-		var string;
-		if (size >= 100000000000) {
-			size = size / 100000000000;
-			string = "TB";
-		} else if (size >= 100000000) {
-			size = size / 100000000;
-			string = "GB";
-		} else if (size >= 100000) {
-			size = size / 100000;
-			string = "MB";
-		} else if (size >= 100) {
-			size = size / 100;
-			string = "KB";
-		} else {
-			size = size * 10;
-			string = "b";
-		}
-		return (Math.round(size) / 10).toString() + string;
-	}
 
 	function getFrameRanges(frames) {
 		var mSeq = [],
@@ -357,16 +413,15 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 
 	function attachDOMData(path, file) {
 		if (file.type==='f') {
-			file._size = filesize(file.size);
 			file.href = "/@openbitch" + path + "/" + file.name;
 			var ext = file.name.split(".");
 			if (!file.name.match(/^\./) && ext.length>1) {
 				file._ext = ext.slice(-1)[0].toLowerCase();
 			}
 		} else {
-			file._size = filesize(file.size);
 			file.href = path + "/" + file.name;
 		}
+		file._size = filesize(file.size);
 		var m = moment(file.mtime);
 		file._xtime = parseInt(m.format('X'), 10);
 		file._mtime = m.format("MMM DD YYYY hh:mma");
@@ -383,7 +438,14 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 			url: "/@spreadbitch" + path
 		}).then(function(res) {
 			var filesToShow = {};
-			if (res.data.total>0) {
+			if (res.data.total===-1) {
+				$scope.statusOverride = {
+					type: "error",
+					message: "Access denied"
+				};
+				$location.replace();
+				$location.path($location.path().split("/").slice(0,-1).join("/"));
+			} else if (res.data.total>0) {
 				res.data.listing.forEach(function(file) {
 					if (!excludeFiles.hasOwnProperty(file.name) &&
 						!filesToShow.hasOwnProperty(file.name)) {
@@ -394,26 +456,45 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 				if (Object.keys(filesToShow).length>0) {
 					if (!isOpeningSequence) { $location.path(path); }
 					$scope.filelist = findSequenceFiles(path, filesToShow);
-					if (lastPath!==null) {
-						$http({
-							method: 'GET',
-							url: "/@abandonbitch" + lastPath
-						});
-					}
-					$http({
-						method: "GET",
-						url: "/@watchbitch" + path
-					}).then(function(resObject) {
-						var channel = resObject.data;
-						lastPath = path;
-						subscription = startSubscription(path, channel);
-					});
+					subscribeToCurrentLocation();
 				} else {
-					// TODO: Tell user this folder can't be open
+					$scope.filelist = {};
 				}
 			} else {
-				// TODO: Tell user this folder can't be open
+				$scope.filelist = {};
 			}
+		});
+	}
+
+	var wasDown = false;
+
+	fayeClient.on('transport:down', function() {
+		wasDown = true;
+		subscription.cancel();
+	});
+
+	fayeClient.on('transport:up', function() {
+		if (wasDown) {
+			subscribeToCurrentLocation();
+		}
+		wasDown = false;
+	});
+
+	function subscribeToCurrentLocation() {
+		var path = $scope.realLocation().path;
+		if (lastPath!==null) {
+			$http({
+				method: 'GET',
+				url: "/@abandonbitch" + lastPath
+			});
+		}
+		$http({
+			method: "GET",
+			url: "/@watchbitch" + path
+		}).then(function(resObject) {
+			var channel = resObject.data;
+			lastPath = path;
+			subscription = startSubscription(path, channel);
 		});
 	}
 
