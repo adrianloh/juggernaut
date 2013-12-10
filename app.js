@@ -168,10 +168,10 @@ app.get(/@inspectbitch\/(.+)/, function(req, res) {
 	function useffmpeg() {
 		var cmd = ffmpegBin + ' -i "BOO" 2>&1'.replace(/BOO/, fsPath);
 		child_process.exec(cmd, function(err, stdout) {
-			var output = stdout.split("\n").filter(function(line) {
-				return line.match(/(stream #|duration)/i);
-			});
-			if (output.length>0 && !output.match(/probesize/)) {
+			if (stdout.match(/(stream #|duration)/i)) {
+				var output = stdout.split("\n").filter(function(line) {
+					return line.match(/(stream #|duration)/i);
+				});
 				res.send(output.join("\n"));
 			} else {
 				res.write("NO INFO: " + fsPath);
