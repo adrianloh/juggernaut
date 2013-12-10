@@ -70,6 +70,8 @@ Ranger.directive('dropzone', function($location) {
 					url: "/@dropitlikeitshot"
 				};
 
+			scope.uploadsInProgress = 0;
+
 			dropzone = new Dropzone("#"+uploadZoneEl.attr("id"), options);
 
 			dropzone.on("dragover", function() {
@@ -86,6 +88,7 @@ Ranger.directive('dropzone', function($location) {
 
 			dropzone.on("addedfile", function(file) {
 				file.uploadPath = scope.realLocation().path + "/" + file.name;
+				scope.uploadsInProgress+=1;
 				uploadZoneEl.removeClass("dropActive");
 			});
 
@@ -122,6 +125,7 @@ Ranger.directive('dropzone', function($location) {
 			});
 
 			dropzone.on("success", function(file, xhr) {
+				scope.uploadsInProgress-=1;
 				dropzone.removeFile(file);
 			});
 
@@ -159,6 +163,58 @@ Ranger.directive('previewbox', function () {
 			el.dblclick(function() {
 				el.hide();
 			});
+		}
+	};
+});
+
+function pulsateElement ($el, ok) {
+	var classToAdd = ok ? "pulseok" : "pulseerror";
+	$el.addClass(classToAdd);
+	setTimeout(function() {
+		$el.removeClass(classToAdd);
+	}, 750);
+}
+
+Ranger.directive('newfolderform', function ($http, $timeout) {
+	return {
+		restrict: 'A',
+		link: function(scope, element, attrs) {
+			scope.newfolder = {
+				isinvalid: false,
+				value: "",
+				inputField: function() {
+					// WTF: Don't fucking ask me why we have to do it like this
+					return $("input.folderNameInput");
+				},
+				reset: function() {
+					this.value = "";
+					this.checkalreadyexists();
+				},
+				make: function() {
+					var _this = this,
+						mkdirPath = scope.realLocation().path + "/" + _this.value;
+					if (!this.isinvalid && this.value.length>0) {
+						$http({
+							method: "PUT",
+							url: "/@makedirectory" + mkdirPath
+						}).success(function() {
+							pulsateElement(_this.inputField(), true);
+							_this.reset();
+						}).error(function() {
+							pulsateElement(_this.inputField(), false);
+							_this.reset();
+						});
+					} else {
+						this.reset();
+					}
+				},
+				checkalreadyexists: function() {
+					var _this = this;
+					this.isinvalid = !(Object.keys(scope.filelist).filter(function(fn) {
+						return fn.toLowerCase()===_this.value.toLowerCase();
+					}).length===0);
+				}
+			}
 		}
 	};
 });
@@ -206,7 +262,7 @@ Ranger.directive('statusbar', function ($timeout, $location) {
 				// We're clobbering these together to "trick" angular into refreshing the view
 				// when either one of these changes and we only trigger the callback once
 				return Object.keys(scope.filelist).length.toString()+$location.path();
-			}, function(total, prev) {
+			}, function (total, prev) {
 				if (Object.keys(scope.filelist).length>0) {
 					refreshTotals();
 				} else {
@@ -221,7 +277,7 @@ Ranger.directive('statusbar', function ($timeout, $location) {
 
 var yowza;
 
-Ranger.controller("FilelistController", function($window, $rootScope, $scope, $timeout, $location, $http) {
+Ranger.controller("FilelistController", function ($window, $rootScope, $scope, $timeout, $location, $http) {
 
 	yowza = $scope;
 
@@ -236,7 +292,33 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 		reverse: false
 	};
 
-	$scope.realLocation = function() {
+	$scope.toolbar = {
+		active: "",
+		toggle: function(me) {
+			if (!$scope.canWriteHere) {
+				if (me==='dropzone' && $scope.uploadsInProgress>0) {
+					this.active = (this.active===me ? '' : 'dropzone');
+				} else {
+					this.active = '';
+				}
+			} else {
+				this.active = (this.active===me ? '' : me);
+			}
+		},
+		okToShow: function (me) {
+			if (!$scope.canWriteHere) {
+				if (me==='dropzone' && this.active===me && $scope.uploadsInProgress>0) {
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				return this.active===me;
+			}
+		}
+	};
+
+	$scope.realLocation = function () {
 		var m = $location.path().split("/__seq/");
 		return {
 			path: m[0],
@@ -244,35 +326,33 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 		}
 	};
 
-	$scope.filterFileItem = function(file) {
+	$scope.filterFileItem = function (file) {
 		// Return true to show, false to hide
 		var seq = $scope.realLocation().sequence;
 		if (seq!==null) {
-			if (file.hasOwnProperty('isPartOfSequence') &&
-				file.isPartOfSequence===seq) {
-				return true;
-			} else {
-				return false;
-			}
-		} else if (file.hasOwnProperty('isPartOfSequence')) {
-			return false;
+			// We are in sequence view, so return true only for items
+			// that match the current sequence's "code"
+			return (file.hasOwnProperty('isPartOfSequence') && file.isPartOfSequence===seq);
+		} else {
+			// Every other time, if a file is part of a sequence, hide it
+			// because the 's' type file will represent it
+			return !file.hasOwnProperty('isPartOfSequence');
 		}
-		return true;
 	};
 
 	$scope.openFolder = openFolder;
 
-	$scope.goUpOneLevelOnClick = function() {
+	$scope.goUpOneLevelOnClick = function () {
 		var p = $location.path(),
 			n = $scope.realLocation().sequence!==null ? -2 : -1;
 		openFolder(p.split("/").slice(0,n).join("/"));
 	};
 
-	$scope.goBackOnClick = function() {
+	$scope.goBackOnClick = function () {
 		history.back();
 	};
 
-	$scope.inspectFile = function(file) {
+	$scope.inspectFile = function (file) {
 		var url = $scope.realLocation().path,
 			filepath = url + "/" + file.name;
 		$scope.previewThumb = "/@preview" + filepath;
@@ -281,7 +361,7 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 		$http({
 			method: "GET",
 			url: "/@inspectbitch" + filepath
-		}).then(function(resObj) {
+		}).then(function (resObj) {
 			$scope.fileinfo = resObj.data;
 		});
 	};
@@ -289,7 +369,7 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 	function getFrameRanges(frames) {
 		var mSeq = [],
 			seq;
-		frames.sort(function(a, b) { return a - b; }).forEach(function(n,i) {
+		frames.sort(function (a, b) { return a - b; }).forEach(function (n,i) {
 			var previous_number = frames[i-1];
 			if (i===0) {
 				seq = n.toString();
@@ -325,11 +405,11 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 		var codex = {},
 			re_vfxseq = new RegExp(/\d+(?!.*\d+)/),
 			re_tvepisodes = new RegExp(/(.*S\d\dE)(\d\d)(.*)/i),
-		newList = Object.keys(listOfFilenames).map(function(filename) {
+		newList = Object.keys(listOfFilenames).map(function (filename) {
 			return listOfFilenames[filename];
-		}).filter(function(n) {
+		}).filter(function (n) {
 			return n.type!=='s';
-		}).reduce(function(H, file) {
+		}).reduce(function (H, file) {
 			var pattern = null,
 				m, curr;
 			if (file.type==='f' && file.name.match(/\w+\d+/)) {
@@ -371,11 +451,11 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 			return H;
 		}, {});
 
-		Object.keys(codex).forEach(function(pattern) {
+		Object.keys(codex).forEach(function (pattern) {
 			var replaceWith, name, last, i;
 			if (codex[pattern].files.length>2) {    // If there are less than two files in the sequence, don't group them
 				var frameRanges = getFrameRanges(codex[pattern].frames),
-					rangesWithOnlyOneFrame = frameRanges.filter(function(range) {
+					rangesWithOnlyOneFrame = frameRanges.filter(function (range) {
 						return range.match(/^\d+$/);
 					});
 				if (rangesWithOnlyOneFrame.length!==frameRanges.length) {
@@ -385,7 +465,7 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 					} else {
 						name = pattern.replace(/__d9c646a0d802__/, replaceWith);
 					}
-					codex[pattern].files.forEach(function(file) {
+					codex[pattern].files.forEach(function (file) {
 						file.isPartOfSequence = pattern;
 					});
 					last = codex[pattern].files[codex[pattern].files.length-1];
@@ -433,9 +513,10 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 		$http({
 			method: "GET",
 			url: "/@spreadbitch" + path
-		}).then(function(res) {
+		}).then(function (res) {
 			var filesToShow = {};
-			if (res.data.total===-1) {
+				$scope.canWriteHere = res.data.write;
+				if (res.data.total===-1) {
 				$scope.statusOverride = {
 					type: "error",
 					message: "Access denied"
@@ -443,7 +524,7 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 				$location.replace();
 				$location.path($location.path().split("/").slice(0,-1).join("/"));
 			} else if (res.data.total>0) {
-				res.data.listing.forEach(function(file) {
+				res.data.listing.forEach(function (file) {
 					if (!excludeFiles.hasOwnProperty(file.name) &&
 						!filesToShow.hasOwnProperty(file.name)) {
 						attachDOMData(path, file);
@@ -465,12 +546,12 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 
 	var wasDown = false;
 
-	fayeClient.on('transport:down', function() {
+	fayeClient.on('transport:down', function () {
 		wasDown = true;
 		subscription.cancel();
 	});
 
-	fayeClient.on('transport:up', function() {
+	fayeClient.on('transport:up', function () {
 		if (wasDown) {
 			subscribeToCurrentLocation();
 		}
@@ -488,7 +569,7 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 		$http({
 			method: "GET",
 			url: "/@watchbitch" + path
-		}).then(function(resObject) {
+		}).then(function (resObject) {
 			var channel = resObject.data;
 			lastPath = path;
 			subscription = startSubscription(path, channel);
@@ -497,24 +578,28 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 
 	function startSubscription(path, channelId) {
 		subscription.cancel();
-		return fayeClient.subscribe( fayeBase + "/listenbitch/" + channelId, function(data) {
+		return fayeClient.subscribe( fayeBase + "/listenbitch/" + channelId, function (data) {
 			var event = data.event,
 				file = data.stat;
 			if (event==='created') {
+				attachDOMData(path,file);
 				if (!$scope.filelist.hasOwnProperty(file.name)) {
-					attachDOMData(path,file);
 					$scope.filelist[file.name] = file;
-					$scope.$apply(function() {
+					$scope.$apply(function () {
 						$scope.filelist = findSequenceFiles(path, $scope.filelist);
+					});
+				} else {
+					$scope.$apply(function () {
+						$scope.filelist[file.name] = file;
 					});
 				}
 			} else if (event==='deleted') {
-				$scope.$apply(function() {
+				$scope.$apply(function () {
 					delete $scope.filelist[file.name];
 					$scope.filelist = findSequenceFiles(path, $scope.filelist);
 				});
 			} else if (event==='changed' && $scope.filelist.hasOwnProperty(file.name)) {
-				$scope.$apply(function() {
+				$scope.$apply(function () {
 					attachDOMData(path,file);
 					$scope.filelist[file.name] = file;
 				});
@@ -522,7 +607,7 @@ Ranger.controller("FilelistController", function($window, $rootScope, $scope, $t
 		});
 	}
 
-	$window.addEventListener("popstate", function(e) {
+	$window.addEventListener("popstate", function (e) {
 		openFolder($location.path());
 	});
 

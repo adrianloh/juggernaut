@@ -71,53 +71,59 @@ var excludeFiles = {
 	'Thumbs.db': null
 };
 
-var mime = (function() {
+var mime = (function () {
 
 	var self = {},
 		customs = {
-		'.dpx': 'image/dpx',
-		'.cin': 'image/x-cin',
-		'.exr': 'image/x-exr',
-		'.pic': 'image/x-pic',
-		'.m2ts': 'video/mpeg',
-		'.mts': 'video/mpeg',
-		'.k25': 'image/x-k25',
-		'.sgi': 'image/x-sgi',
-		'.iff': 'image/x-iff',
-		'.jpx': 'image/x-jpx',
-		'.dng': 'image/x-dng',
-		'.3fr': 'image/x-3fr',
-		'.jpg': 'image/jpeg',
-		'.jpeg': 'image/jpeg',
-		'.tif': 'image/tiff',
-		'.tiff': 'image/tiff',
-		'.crw': 'image/crw',
-		'.raf': 'image/raf',
-		'.pix': 'image/pix',
-		'.hdr': 'image/hdr',
-		'.kdc': 'image/kdc',
-		'.svg': 'image/svg',
-		'.dcx': 'image/dcx',
-		'.bmp': 'image/bmp',
-		'.dcm': 'image/dcm',
-		'.dcr': 'image/dcr',
-		'.cur': 'image/cur',
-		'.erf': 'image/erf',
-		'.png': 'image/png',
-		'.nrw': 'image/nrw',
-		'.arw': 'image/arw',
-		'.ai': 'image/ai',
-		'.cr2': 'image/cr2',
-		'.gif': 'image/gif',
-		'.tga': 'image/tga',
-		'.ico': 'image/ico',
-		'.psd': 'image/psd',
-		'.nef': 'image/nef',
-		'.epdf': 'application/epdf',
-		'.pdf': 'application/pdf'
+			'.nef': 'image/x-raw-nikon',
+			'.crw': 'image/x-raw-canon',
+			'.raf': 'image/x-raw-fuji',
+			'.arw': 'image/x-raw-sony',
+			'.srf': 'image/x-raw-sony',
+			'.cr2': 'image/raw-canon',
+			'.dcr': 'image/x-raw-kodak',
+			'.dcs': 'image/x-raw-kodak',
+			'.raw': 'image/x-raw-panasonic',
+			'.rw2': 'image/x-raw-panasonic',
+			'.mrw': 'image/x-raw-minolta',
+			'.orf': 'image/x-raw-olympus',
+			'.dpx': 'image/x-dpx',
+			'.cin': 'image/x-cin',
+			'.exr': 'image/x-exr',
+			'.pic': 'image/x-pic',
+			'.k25': 'image/x-k25',
+			'.sgi': 'image/x-sgi',
+			'.iff': 'image/x-iff',
+			'.jpx': 'image/x-jpx',
+			'.dng': 'image/x-dng',
+			'.3fr': 'image/x-3fr',
+			'.jpg': 'image/jpeg',
+			'.jpeg': 'image/jpeg',
+			'.tif': 'image/tiff',
+			'.tiff': 'image/tiff',
+			'.pix': 'image/pix',
+			'.hdr': 'image/hdr',
+			'.kdc': 'image/kdc',
+			'.svg': 'image/svg',
+			'.dcx': 'image/dcx',
+			'.bmp': 'image/bmp',
+			'.dcm': 'image/dcm',
+			'.cur': 'image/cur',
+			'.erf': 'image/erf',
+			'.png': 'image/png',
+			'.nrw': 'image/nrw',
+			'.gif': 'image/gif',
+			'.tga': 'image/tga',
+			'.ico': 'image/ico',
+			'.ai': 'image/x-adobe-illustrator',
+			'.psd': 'image/x-adobe-photoshop',
+			'.m2ts': 'video/mpeg',
+			'.mts': 'video/mpeg',
+			'.epdf': 'application/epdf',
+			'.pdf': 'application/pdf'
 	};
 
-	self.lookup = function(filepath) {
+	self.lookup = function (filepath) {
 		var extension = path.extname(filepath).toLowerCase();
 		return customs.hasOwnProperty(extension) ? customs[extension] : MIME.lookup(filepath);
 	};
@@ -126,7 +132,7 @@ var mime = (function() {
 
 })();
 
-app.get(/@openbitch\/(.+)/, function(req, res) {
+app.get(/@openbitch\/(.+)/, function (req, res) {
 	var fsPath = "/" + req.params[0];
 	if (fs.existsSync(fsPath)) {
 		res.sendfile(fsPath);
@@ -136,7 +142,7 @@ app.get(/@openbitch\/(.+)/, function(req, res) {
 	}
 });
 
-app.get(/@streambitch\/(.+)/, function(req, res) {
+app.get(/@streambitch\/(.+)/, function (req, res) {
 	var fsPath = "/" + req.params[0];
 	if (fs.existsSync(fsPath)) {
 		var size = fs.statSync(fsPath).size,
@@ -144,10 +150,10 @@ app.get(/@streambitch\/(.+)/, function(req, res) {
 			stream = fs.createReadStream(fsPath);
 		res.set('Content-Type', mimetype);
 		res.set('Content-Length', size);
-		stream.on("data", function(chunk) {
+		stream.on("data", function (chunk) {
 			res.write(chunk);
 		});
-		stream.on('close', function() {
+		stream.on('close', function () {
 			res.end();
 		});
 	} else {
@@ -158,7 +164,7 @@ app.get(/@streambitch\/(.+)/, function(req, res) {
 
 var ffmpegBin = __dirname + "/bin/" + os.platform() + "_ffmpeg";
 
-app.get(/@inspectbitch\/(.+)/, function(req, res) {
+app.get(/@inspectbitch\/(.+)/, function (req, res) {
 	var fsPath = "/" + req.params[0],
 		mimetype = mime.lookup(fsPath),
 		extension = path.extname(fsPath).toLowerCase();
@@ -167,9 +173,9 @@ app.get(/@inspectbitch\/(.+)/, function(req, res) {
 
 	function useffmpeg() {
 		var cmd = ffmpegBin + ' -i "BOO" 2>&1'.replace(/BOO/, fsPath);
-		child_process.exec(cmd, function(err, stdout) {
+		child_process.exec(cmd, function (err, stdout) {
 			if (stdout.match(/(stream #|duration)/i)) {
-				var output = stdout.split("\n").filter(function(line) {
+				var output = stdout.split("\n").filter(function (line) {
 					return line.match(/(stream #|duration)/i);
 				});
 				res.send(output.join("\n"));
@@ -203,7 +209,7 @@ app.get(/@inspectbitch\/(.+)/, function(req, res) {
 			} else {
 				cmd = "identify -verbose";
 			}
-			child_process.exec(cmd + ' "ME"'.replace(/ME/,fsPath) , function(err, stdout, stderr) {
+			child_process.exec(cmd + ' "ME"'.replace(/ME/,fsPath) , function (err, stdout, stderr) {
 				if (!stdout.match(new RegExp(fsPath)) ||
 					stdout.match(/(unable|failed)/)) {
 					useffmpeg();
@@ -225,30 +231,17 @@ app.get(/@inspectbitch\/(.+)/, function(req, res) {
 
 });
 
-app.get(/@preview\/(.+)/, function(req, res) {
+app.get(/@preview\/(.+)/, function (req, res) {
 	res.set('Content-Type', 'image/jpeg');
 	var fsPath = "/" + req.params[0],
 		mimetype = mime.lookup(fsPath),
 		extension = path.extname(fsPath).toLowerCase(),
-		args, cmd,
-		exiv2 = {
-			'.raf': true,
-			'.crw': true,
-			'.cr2': true,
-			'.arw': true,
-			'.nef': true,
-			'.srf': true,
-			'.sr2': true,
-			'.mrw': true,
-			'.raw': true,
-			'.rw2': true,
-			'.rwl': true
-		};
+		args, cmd;
 
 	function sendImage(bin, args) {
 		var ffmpegStream = child_process.spawn(bin, args);
 		ffmpegStream.stdout.pipe(res);
-		ffmpegStream.on("close", function() {
+		ffmpegStream.on("close", function () {
 			res.end();
 		});
 	}
@@ -264,9 +257,9 @@ app.get(/@preview\/(.+)/, function(req, res) {
 		}
 		magickBaseCmd = magickBaseCmd.replace(/#FILE/, p);
 		magickBaseCmd = magickBaseCmd.replace(/#DEST/, fff);
-		child_process.exec(magickBaseCmd, function(err, stdout, stder) {
+		child_process.exec(magickBaseCmd, function (err, stdout, stder) {
 			if (fs.existsSync(fff)) {
-				setTimeout(function() { fs.unlink(fff); }, 10000);
+				setTimeout(function () { fs.unlink(fff); }, 10000);
 				res.sendfile(fff);
 			} else {
 				sendNoContent();
@@ -275,11 +268,11 @@ app.get(/@preview\/(.+)/, function(req, res) {
 	}
 
 	function convertAndSend(cmd, outputPath, afterConverCallback) {
-		child_process.exec(cmd, function(err, stdout, stderr) {
+		child_process.exec(cmd, function (err, stdout, stderr) {
 			if (!err && fs.existsSync(outputPath)) {
 				if (afterConverCallback) { afterConverCallback(); }
-				setTimeout(function() {
-					fs.unlink(outputPath, function(err) {
+				setTimeout(function () {
+					fs.unlink(outputPath, function (err) {
 						if (err) { console.log(err); }
 					});
 				}, 10000);
@@ -297,20 +290,20 @@ app.get(/@preview\/(.+)/, function(req, res) {
 
 	var _basename;
 	if (fs.existsSync(fsPath)) {
-		if (exiv2.hasOwnProperty(extension)) {
+		if (mimetype.match(/x-raw/)) {
 			// Extract previews from RAW formats and send
 			_basename = uuid.v4().replace(/-/g,"");
 			var tmpFile = '/tmp/' + _basename + extension,
 				previewPathToExpect = "/tmp/" + _basename + "-preview2.jpg";
 			cmd = 'cp "#FILE" "#TMP" && exiv2 -ep2 "#TMP"'.replace(/#FILE/, fsPath).replace(/#TMP/g, tmpFile);
 			console.log(cmd);
-			convertAndSend(cmd, previewPathToExpect, function() {
+			convertAndSend(cmd, previewPathToExpect, function () {
 				fs.unlink(tmpFile);
 			});
 		} else if (mimetype.match(/image/)) {
 			// Use RV to convert all images
 			_basename = "/tmp/" + uuid.v4().replace(/-/g,"") + ".jpg";
-			cmd = 'rvio "#PATH" -outres 640 400 '.replace(/#PATH/, fsPath)
+			cmd = 'rvio "#PATH" -outres 640 400 '.replace(/#PATH/, fsPath);
 			if (extension.match(/exr/)) {
 				cmd+= "-outsrgb "
 			}
@@ -321,10 +314,10 @@ app.get(/@preview\/(.+)/, function(req, res) {
 			// Use ffmpeg to convert all videos
 			cmd = ffmpegBin + ' -i "BOO" 2>&1 | grep Duration'.replace(/BOO/, fsPath);
 			console.log(cmd);
-			child_process.exec(cmd, function(err, stdout, stder) {
+			child_process.exec(cmd, function (err, stdout, stder) {
 				var m = stdout.match(/\d\d:\d\d:\d\d/);
 				if (m) {
-					var duration = m[0].split(":").reduce(function(T,v,i) { return T + (v*Math.pow(60,2-i)); },0),
+					var duration = m[0].split(":").reduce(function (T,v,i) { return T + (v*Math.pow(60,2-i)); },0),
 						offset_in_seconds = parseInt(Math.floor(duration/2));
 					args = ['-ss', offset_in_seconds, '-i', fsPath, '-f', 'mjpeg', '-vframes','1','-vf', 'scale=640:-1',"-"];
 					sendImage(ffmpegBin, args);
@@ -343,44 +336,63 @@ app.get(/@preview\/(.+)/, function(req, res) {
 	}
 });
 
-
-app.get(/@spreadbitch\/?(.*)/, function(req, res) {
+app.get(/@spreadbitch\/?(.*)/, function (req, res) {
 	var fsPath = "/" + req.params[0];
-	fs.readdir(fsPath, function(err, files) {
-		var fileList = [];
-		if (!err && files.length>0) {
-			Q.all(files.map(function(filename) {
-				var q = Q.defer(),
-					fullpath = fsPath + "/" + filename;
-				fs.stat(fullpath, function(err, stat) {
-					if (err) {
-						q.resolve(null);
-					} else {
-						q.resolve(makeStatObject(filename, stat));
-					}
-				});
-				return q.promise;
-			})).then(function(results) {
-				results.forEach(function(f) {
-					if (f!==null) {
-						fileList.push(f);
-					}
-				});
+
+	var testWritableFile = path.join(fsPath,".jjj"+uuid.v4()),
+		checkWritable = function () {
+			var q = Q.defer();
+			fs.writeFile(testWritableFile, function(err) {
+				if (err) {
+					q.resolve(false);
+				} else {
+					fs.unlink(testWritableFile, function(err) {
+						// Ummm..... who cares?
+					});
+					q.resolve(true);
+				}
+			});
+			return q.promise;
+		};
+
+	checkWritable().then(function(isWritable) {
+		fs.readdir(fsPath, function (err, files) {
+			var fileList = [];
+			if (!err && files.length>0) {
+				Q.all(files.map(function (filename) {
+						var q = Q.defer(),
+							fullpath = fsPath + "/" + filename;
+						fs.stat(fullpath, function (err, stat) {
+							if (err) {
+								q.resolve(null);
+							} else {
+								q.resolve(makeStatObject(filename, stat));
+							}
+						});
+						return q.promise;
+					})).then(function (results) {
+						results.forEach(function (f) {
+							if (f!==null) {
+								fileList.push(f);
+							}
+						});
+						res.send({
+							write: isWritable,
+							total: fileList.length,
+							listing: fileList
+						});
+					});
+			} else {
 				res.send({
-					total: fileList.length,
-					listing: fileList
+					total: err ? -1 : 0,
+					listing: []
 				});
-			});
-		} else {
-			res.send({
-				total: err ? -1 : 0,
-				listing: []
-			});
-		}
+			}
+		});
 	});
 });
 
-app.get(/@abandonbitch\/?(.*)/, function(req, res) {
+app.get(/@abandonbitch\/?(.*)/, function (req, res) {
 	var fsPath = "/" + req.params[0];
 	if (folderWatchers.hasOwnProperty(fsPath)) {
 		folderWatchers[fsPath].listeners-=1;
@@ -392,7 +404,7 @@ app.get(/@abandonbitch\/?(.*)/, function(req, res) {
 	res.send("OK");
 });
 
-app.get(/@watchbitch\/?(.*)/, function(req, res) {
+app.get(/@watchbitch\/?(.*)/, function (req, res) {
 	var fsPath = "/" + req.params[0];
 	if (fs.existsSync(fsPath)) {
 		if (folderWatchers.hasOwnProperty(fsPath)) {
@@ -402,10 +414,10 @@ app.get(/@watchbitch\/?(.*)/, function(req, res) {
 				channel: uuid.v4(),
 				listeners: 1
 			};
-			watcher.emitter = fs.watch(fsPath, function(event, filename) {
+			watcher.emitter = fs.watch(fsPath, function (event, filename) {
 				var filepath = fsPath + "/" + filename;
 				if (excludeFiles.hasOwnProperty(filename)) { return; }
-				fs.stat(filepath, function(err, stat) {
+				fs.stat(filepath, function (err, stat) {
 					var file;
 					if (err) {
 						// When stat-ing a file that's gone, we get this err
@@ -448,27 +460,40 @@ app.get(/@watchbitch\/?(.*)/, function(req, res) {
 	}
 });
 
-var util = require('util');
+/* ==== Methods that alter the filesystem ==== */
+
+app.put(/@makedirectory\/(.+)/, function (req, res) {
+	var fsPath = "/" + req.params[0];
+	fs.mkdir(fsPath, function (err) {
+		if (!err) {
+			res.status(201);
+			res.end();
+		} else {
+			res.status(403);
+			res.end();
+		}
+	});
+});
 
 app.post('/@dropitlikeitshot', function (req, res) {
 	var savePath = req.headers.key,
 		form = new formidable.IncomingForm(),
 		out = fs.createWriteStream(savePath);
-	out.on('error', function() {
+	out.on('error', function () {
 		res.status(403);
 		res.end();
 	});
-	out.on('open', function() {
-		form.onPart = function(part) {
+	out.on('open', function () {
+		form.onPart = function (part) {
 			if (!part.filename) {
 				// let formidable handle all non-file parts
 				form.handlePart(part);
 			}
-			part.on("data", function(chunk) {
+			part.on("data", function (chunk) {
 				out.write(chunk);
 			});
 		};
-		form.parse(req, function(err, fields, files) {
+		form.parse(req, function (err, fields, files) {
 			if (!err) {
 				res.status(200);
 			} else {
@@ -479,7 +504,7 @@ app.post('/@dropitlikeitshot', function (req, res) {
 	});
 });
 
-app.all("*", function(req, res) {
+app.get("*", function (req, res) {
 	res.set("Cache-Control", "max-age=0, no-store, no-cache, must-revalidate");
 	res.sendfile(__dirname + '/index.html');
 });
@@ -490,6 +515,6 @@ bayeux.attach(server);
 
 fayeClient = new faye.Client('http://localhost:' + app.get("port") + fayeBase);
 
-server.listen(app.get('port'), function() {
+server.listen(app.get('port'), function () {
 	console.log("Express server listening on port " + app.get('port'));
 });

@@ -17,20 +17,33 @@
 <body>
 <div id="filelist" ng-controller="FilelistController" bindonce>
 	<div id="blocker"></div>
-	<div ng-show="sort.showDropzone" class="dropzoneContainer">
+	<div ng-show="toolbar.okToShow('dropzone')" class="dropzoneContainer">
 		<form id="my-awesome-dropzone" action="uploadServer" class="dropzone" dropzone></form>
 	</div>
 	<div id="toolbar">
 		<div id="goLeftButton" ng-click="goBackOnClick()"><i class="icon-caret-left goLeftIcon"></i></div>
 		<div id="goUpButton" ng-click="goUpOneLevelOnClick()"><i class="icon-level-up goUpIcon"></i></div>
-		<div id="inboxButton" ng-click="sort.showDropzone=!sort.showDropzone"><i class="icon-inbox inboxIcon"></i></div>
+		<div id="inboxButton" ng-class="{'buttonNoGood': !canWriteHere}" ng-click="toolbar.toggle('dropzone')">
+			<div ng-show="uploadsInProgress>0" class="uploadsinprogress" ng-bind="uploadsInProgress"></div>
+			<i class="icon-inbox inboxIcon"></i>
+		</div>
+		<div id="newFolderButton" ng-class="{'buttonNoGood': !canWriteHere}"  ng-click="toolbar.toggle('newfoldername')">
+			<i class="icon-plus newFolderPlus"></i>
+			<i class="icon-folder-close-alt newFolderIcon"></i>
+		</div>
+		<div id="newFolderName" ng-show="toolbar.okToShow('newfoldername')">
+			<form id="newFolderNameForm" newfolderform>
+				<input ng-class="{'folderNameInput': true, 'pulseerror': newfolder.isinvalid}" type="text" ng-change="newfolder.checkalreadyexists()" ng-model="newfolder.value">
+				<button class="okButton" ng-click="newfolder.make()">OK</button>
+			</form>
+		</div>
 	</div>
 	<div id="previewBox" previewbox>
 		<img class="previewThumb" ng-src="{{previewThumb}}" onerror="ImgError(this)"/>
 		<pre class="fileinfo" ng-bind="fileinfo"></pre>
 	</div>
 	<ul id="filelistContainer">
-		<li ng-class="{'filelistItem': true, 'odd': $index%2===0}" ng-repeat="(filename, file) in filelist | toArray | filter: filterFileItem | orderBy: sort.predicate:sort.reverse">
+		<li bo-id="file.name" ng-class="{'filelistItem': true, 'odd': $index%2===0}" ng-repeat="(filename, file) in filelist | toArray | filter: filterFileItem | orderBy: sort.predicate:sort.reverse">
 			<div ng-class="{'littleSadSquare': true, 'odd': $index%2===0}" ng-click="sort.predicate='name'; sort.reverse=!sort.reverse"></div>
 			<div ng-if="file.type==='d'" class="filename">
 				<a class="isDir" bo-href="origin + file.href" ng-click="$event.button===0 ? openFolder(file.href) : null" bo-text="file.name"></a>
