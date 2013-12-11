@@ -35,6 +35,14 @@ function filesize(size) {
 	return (Math.round(size) / 10).toString() + string;
 }
 
+function pulsateElement ($el, ok) {
+	var classToAdd = ok ? "pulseok" : "pulseerror";
+	$el.addClass(classToAdd);
+	setTimeout(function() {
+		$el.removeClass(classToAdd);
+	}, 750);
+}
+
 var Ranger = angular.module('Ranger', ['pasvaz.bindonce']);
 
 Ranger.config(function ($anchorScrollProvider, $locationProvider) {
@@ -167,13 +175,6 @@ Ranger.directive('previewbox', function () {
 	};
 });
 
-function pulsateElement ($el, ok) {
-	var classToAdd = ok ? "pulseok" : "pulseerror";
-	$el.addClass(classToAdd);
-	setTimeout(function() {
-		$el.removeClass(classToAdd);
-	}, 750);
-}
 
 Ranger.directive('newfolderform', function ($http, $timeout) {
 	return {
