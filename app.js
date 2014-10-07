@@ -391,6 +391,7 @@ app.get(/@spreadbitch\/?(.*)/, function (req, res) {
 					});
 			} else {
 				res.send({
+					write: isWritable,
 					total: err ? -1 : 0,
 					listing: []
 				});
