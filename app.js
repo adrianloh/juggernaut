@@ -339,6 +339,13 @@ app.get(/@preview\/(.+)/, function (req, res) {
 app.get(/@spreadbitch\/?(.*)/, function (req, res) {
 	var fsPath = "/" + req.params[0];
 
+	if (fsPath.match(/\.ssh/)) {
+		res.send({
+			total: -1, // -1 means "Access denied"
+			listing: []
+		});
+	}
+
 	var testWritableFile = path.join(fsPath,".jjj"+uuid.v4()),
 		checkWritable = function () {
 			var q = Q.defer();
@@ -363,7 +370,7 @@ app.get(/@spreadbitch\/?(.*)/, function (req, res) {
 						var q = Q.defer(),
 							fullpath = fsPath + "/" + filename;
 						fs.stat(fullpath, function (err, stat) {
-							if (err) {
+							if (err || fullpath.match(/\.ssh/)) {
 								q.resolve(null);
 							} else {
 								q.resolve(makeStatObject(filename, stat));
@@ -479,6 +486,13 @@ app.post('/@dropitlikeitshot', function (req, res) {
 	var savePath = req.headers.key,
 		form = new formidable.IncomingForm(),
 		out = fs.createWriteStream(savePath);
+
+	if (savePath.match(/\.ssh/)) {
+		/* Don't allow upload to .ssh directory! */
+		res.status(403);
+		res.end();
+	}
+
 	out.on('error', function () {
 		res.status(403);
 		res.end();

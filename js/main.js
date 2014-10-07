@@ -517,7 +517,7 @@ Ranger.controller("FilelistController", function ($window, $rootScope, $scope, $
 		}).then(function (res) {
 			var filesToShow = {};
 				$scope.canWriteHere = res.data.write;
-				if (res.data.total===-1) {
+			if (res.data.total===-1) {
 				$scope.statusOverride = {
 					type: "error",
 					message: "Access denied"
