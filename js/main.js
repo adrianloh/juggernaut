@@ -612,4 +612,6 @@ Ranger.controller("FilelistController", function ($window, $rootScope, $scope, $
 		openFolder($location.path());
 	});
 
+	openFolder($location.path());
+
 });
