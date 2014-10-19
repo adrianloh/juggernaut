@@ -64,7 +64,7 @@ Ranger.filter('toArray', function () {
 });
 
 
-Ranger.directive('dropzone', function($location) {
+Ranger.directive('dropzone', function($timeout) {
 	return {
 		restrict: 'A',
 		link: function(scope, element, attrs) {
@@ -133,7 +133,9 @@ Ranger.directive('dropzone', function($location) {
 			});
 
 			dropzone.on("success", function(file, xhr) {
-				scope.uploadsInProgress-=1;
+				$timeout(function() {
+					scope.uploadsInProgress-=1;
+				});
 				dropzone.removeFile(file);
 			});
 
@@ -353,18 +355,23 @@ Ranger.controller("FilelistController", function ($window, $rootScope, $scope, $
 		history.back();
 	};
 
-	$scope.inspectFile = function (file) {
+	$scope.inspectFile = function (event, file) {
 		var url = $scope.realLocation().path,
-			filepath = url + "/" + file.name;
-		$scope.previewThumb = "/@preview" + filepath;
-		$scope.fileinfo = filepath;
-		$scope.showInfo();
-		$http({
-			method: "GET",
-			url: "/@inspectbitch" + filepath
-		}).then(function (resObj) {
-			$scope.fileinfo = resObj.data;
-		});
+			filepath = url + "/" + file.name,
+			clickedOnLink = $(event.target).is("a");
+		if (clickedOnLink) {
+			return false;
+		} else {
+			$scope.previewThumb = "/@preview" + filepath;
+			$scope.fileinfo = filepath;
+			$scope.showInfo();
+			$http({
+				method: "GET",
+				url: "/@inspectbitch" + filepath
+			}).then(function (resObj) {
+				$scope.fileinfo = resObj.data;
+			});
+		}
 	};
 
 	function getFrameRanges(frames) {

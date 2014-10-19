@@ -166,7 +166,7 @@ input {
 #newFolderName {
 	position: fixed;
 	top: 68px;
-	width: 188px;
+	width: 218px;
 	height: 28px;
 	background: rgb(64, 71, 104);
 	left: 168px;
@@ -310,29 +310,43 @@ a.isSeq:hover {
 
 #previewBox {
 	position: fixed;
-	min-height: 430px;
+	height: 51.3%;
 	font-size: 13px;
-	min-width: 620px;
+	width: 500px;
 	right: 20px;
 	top: 10px;
 	display: none;
+	padding: 5px;
+	background-color: rgb(0, 0, 0);
 }
 
 .fileinfo {
-	padding: 30px;
-	position: fixed;
+	padding: 20px 0 0 10px;
 	font-family: 'Roboto Condensed', sans-serif;
 	line-height: 1.5em;
-	background: aliceblue;
-	width: 580px;
-	overflow-y: scroll;
-	height: 290px;
-	overflow-x: scroll;
+	background: rgb(178, 178, 178);
 	white-space: pre;
+	margin: 0;
+	min-height: 230px;
+	min-width: 490px;
+	width: 200%;
+}
+
+.previewInfoBox {
+	position: absolute;
+	width: 500px;
+	height: 250px;
+	margin-top: 0;
+	overflow: auto;
+	min-height: 253px;
 }
 
 .previewThumb {
-	max-height: 400px;
+	max-height: 283px;
+	max-width: 500px;
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
 }
 
 #statusBar {

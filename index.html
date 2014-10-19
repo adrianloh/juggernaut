@@ -40,7 +40,9 @@
 	</div>
 	<div id="previewBox" previewbox>
 		<img class="previewThumb" ng-src="{{previewThumb}}" onerror="ImgError(this)"/>
-		<pre class="fileinfo" ng-bind="fileinfo"></pre>
+		<div class="previewInfoBox">
+			<pre class="fileinfo" ng-bind="fileinfo"></pre>
+		</div>
 	</div>
 	<ul id="filelistContainer">
 		<li bo-id="file.name" ng-class="{'filelistItem': true, 'odd': $index%2===0}" ng-repeat="(filename, file) in filelist | toArray | filter: filterFileItem | orderBy: sort.predicate:sort.reverse">
@@ -48,7 +50,7 @@
 			<div ng-if="file.type==='d'" class="filename">
 				<a class="isDir" bo-href="origin + file.href" ng-click="$event.button===0 ? openFolder(file.href) : null" bo-text="file.name"></a>
 			</div>
-			<div ng-if="file.type==='f'" class="filename" ng-click="inspectFile(file)">
+			<div ng-if="file.type==='f'" class="filename" ng-click="inspectFile($event, file)">
 				<a bo-href="origin + file.href" target="_blank" bo-text="file.name"></a>
 			</div>
 			<div ng-if="file.type==='s'" class="filename">
