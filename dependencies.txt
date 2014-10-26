@@ -1,30 +1,11 @@
-   99  brew uninstall imagemagick
-  104  brew install ufraw
-  105  brew install openexr
-  106  brew install libjpeg-turbo
-  107  brew install libexif
-  108  brew install imagemagick --build-from-source
-  121  brew install dcraw
-  122  brew install ufraw
-  123  brew install exiftool
-  124  brew update
-  125  brew update
-  126  brew uninstall imagemagick
-  130  brew install imagemagick
-  142  brew uninstall ufraw
-  143  brew install ufraw
-  144  brew uninstall ufraw
-  145  brew install ufraw --enable-x-trans
-  146  brew uninstall ufraw
-  147  brew install ufraw --build-from-source --enable-x-trans
-  148  brew uninstall ufraw
-  149  sublime /Library/Caches/Homebrew/Formula/ufraw.brewing 
-  151  brew edit ufraw
-  152  brew edit ufraw
-  153  brew edit ufraw
-  154  brew install ufraw
-  156  brew install exiv2
-  157  brew uninstall exi
-  158  brew install exiv2
-  207  brew install ghostscript
-  501  history | grep brew
+brew install openexr
+brew install libjpeg-turbo
+brew install libexif
+brew install imagemagick --build-from-source
+brew install dcraw
+brew install exiftool
+sublime /Library/Caches/Homebrew/Formula/ufraw.brewing 
+brew edit ufraw
+brew install ufraw --build-from-source --enable-x-trans
+brew install exiv2
+brew install ghostscript
