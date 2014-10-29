@@ -306,7 +306,7 @@ app.get(/@preview\/(.+)/, function (req, res) {
 			_basename = "/tmp/" + uuid.v4().replace(/-/g,"") + ".jpg";
 			cmd = 'rvio "#PATH" -outres 640 400 '.replace(/#PATH/, fsPath);
 			if (extension.match(/exr/)) {
-				cmd+= "-outsrgb -outgamma 2.2"
+				cmd+= "-outsrgb -outgamma 2.2 "
 			}
 			cmd+= " -o " + _basename;
 			console.log(cmd);
